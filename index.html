@@ -240,18 +240,15 @@ const map = L.map(
 */
 
 L.tileLayer(
-  "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-  {
-    attribution:
-      "&copy; OpenStreetMap contributors &copy; CARTO",
+  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
 
-    subdomains:
-      "abcd",
+ {
+  attribution:
+    "&copy; OpenStreetMap contributors",
 
-    maxZoom:
-      20
-
-  }
+  maxZoom:
+    19
+}
 ).addTo(map);
 
 // ==================================================
