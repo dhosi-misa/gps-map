@@ -3,7 +3,7 @@
 name="viewport"
 content="width=device-width, initial-scale=1, maximum-scale=1"
 
-<title>Automotive GPS</title> <!-- ================================================== LEAFLET ================================================== --> <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" > <!-- ================================================== STYLE ================================================== --> <style>
+<title>Automotive GPS</title> <!-- ================================================== LEAFLET CSS ================================================== --> <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" > <!-- ================================================== PAGE STYLE ================================================== --> <style>
 html,
 body {
 
@@ -21,53 +21,52 @@ body {
 
 }
 
-/* --------------------------------------------------
-   MAP
-   -------------------------------------------------- */
-
 #map {
-
-  position: absolute;
-
-  top: 0;
-  left: 0;
 
   width: 100%;
   height: 100%;
 
-  background: #eeeeee;
+}
+
+/* ==================================================
+   GPS POSITION INDICATOR
+   ================================================== */
+
+#gpsIndicator {
+
+  position: fixed;
+
+  left: 50%;
+  top: 50%;
+
+  width: 22px;
+  height: 22px;
+
+  transform:
+    translate(-50%, -50%);
+
+  z-index: 2000;
+
+  pointer-events: none;
 
 }
 
 /*
-  This container is what we rotate.
-
-  The GPS position itself stays visually
-  in the middle of the screen.
+  Blue center dot
 */
 
-#map-rotation {
+.gps-dot {
 
   position: absolute;
 
-  top: 0;
-  left: 0;
+  left: 50%;
+  top: 50%;
 
-  width: 100%;
-  height: 100%;
+  width: 16px;
+  height: 16px;
 
-  transform-origin: center center;
-
-}
-
-/* --------------------------------------------------
-   GPS POSITION INDICATOR
-   -------------------------------------------------- */
-
-.gps-position {
-
-  width: 18px;
-  height: 18px;
+  transform:
+    translate(-50%, -50%);
 
   background: #1976ff;
 
@@ -80,35 +79,44 @@ body {
 
 }
 
-/* --------------------------------------------------
-   GPS HEADING CONE
-   -------------------------------------------------- */
+/*
+  Small direction triangle.
 
-.gps-heading {
+  The MAP rotates, not this indicator.
+*/
+
+.gps-arrow {
 
   position: absolute;
 
   left: 50%;
-  bottom: 15px;
-
-  transform:
-    translateX(-50%);
+  top: -18px;
 
   width: 0;
   height: 0;
 
-  border-left: 12px solid transparent;
-  border-right: 12px solid transparent;
+  transform:
+    translateX(-50%);
 
-  border-bottom: 24px solid #1976ff;
+  border-left:
+    7px solid transparent;
 
-  opacity: 0.9;
+  border-right:
+    7px solid transparent;
+
+  border-bottom:
+    16px solid #1976ff;
+
+  filter:
+    drop-shadow(
+      0 1px 2px rgba(0, 0, 0, 0.35)
+    );
 
 }
 
-/* --------------------------------------------------
+/* ==================================================
    STATUS PANEL
-   -------------------------------------------------- */
+   ================================================== */
 
 #status {
 
@@ -117,28 +125,34 @@ body {
   top: 10px;
   left: 10px;
 
-  z-index: 2000;
+  z-index: 3000;
 
-  background: rgba(255, 255, 255, 0.94);
+  background:
+    rgba(255, 255, 255, 0.94);
 
-  padding: 9px 12px;
+  padding:
+    9px 12px;
 
-  border-radius: 8px;
+  border-radius:
+    8px;
 
-  font-size: 13px;
+  color:
+    #222;
 
-  line-height: 1.45;
+  font-size:
+    13px;
 
-  color: #222;
+  line-height:
+    1.45;
 
   box-shadow:
     0 2px 7px rgba(0, 0, 0, 0.25);
 
 }
 
-/* --------------------------------------------------
-   CENTER BUTTON
-   -------------------------------------------------- */
+/* ==================================================
+   RECENTER BUTTON
+   ================================================== */
 
 #centerButton {
 
@@ -147,7 +161,7 @@ body {
   right: 15px;
   bottom: 20px;
 
-  z-index: 2000;
+  z-index: 3000;
 
   width: 48px;
   height: 48px;
@@ -158,178 +172,156 @@ body {
 
   background: white;
 
+  color: #1976ff;
+
+  font-size: 24px;
+
   box-shadow:
     0 2px 8px rgba(0, 0, 0, 0.3);
 
-  font-size: 22px;
-
-  cursor: pointer;
-
 }
 
-</style> </head> <body> <!-- ================================================== MAP ROTATION CONTAINER ================================================== --> <div id="map-rotation">
-<div id="map"></div>
+</style> </head> <body> <!-- ================================================== MAP ================================================== --> <div id="map"></div> <!-- ================================================== FIXED GPS INDICATOR ================================================== --> <div id="gpsIndicator">
+<div class="gps-arrow"></div>
 
-</div> <!-- ================================================== GPS INDICATOR ================================================== --> <div id="gpsIndicator" style=" position: fixed; left: 50%; top: 50%; z-index: 1500; transform: translate(-50%, -50%); pointer-events: none; " >
-<div class="gps-heading"></div>
-
-<div class="gps-position"></div>
+<div class="gps-dot"></div>
 
 </div> <!-- ================================================== STATUS ================================================== --> <div id="status">
 Requesting GPS...
 
-</div> <!-- ================================================== CENTER BUTTON ================================================== --> <button id="centerButton">
+</div> <!-- ================================================== RECENTER BUTTON ================================================== --> <button id="centerButton">
 ●
 
-</button> <!-- ================================================== LEAFLET JAVASCRIPT ================================================== --> <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" ></script> <script>
+</button> <!-- ================================================== LEAFLET ================================================== --> <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" ></script> <!-- ================================================== LEAFLET ROTATION PLUGIN
+   This handles REAL map rotation.
+
+   It is loaded AFTER Leaflet.
+   ================================================== -->
+
+<script src="https://unpkg.com/@tomickigrzegorz/leaflet-rotate/dist/leaflet-rotate.umd.min.js" ></script> <script>
 // ==================================================
 // SETTINGS
 // ==================================================
 
 /*
-  How much GPS history we keep.
+  How far behind the newest GPS reading
+  the displayed position should be.
 
-  The map displays a position approximately
-  2 seconds behind the newest GPS reading.
+  2000 = approximately 2 seconds.
 */
 
-const DISPLAY_DELAY = 2000;
+const DISPLAY_DELAY =
+  2000;
 
 /*
   Position smoothing.
 
-  Lower = smoother
-  Higher = more responsive
+  Smaller = smoother.
+  Larger = more responsive.
 */
 
-const POSITION_SMOOTHING = 0.10;
+const POSITION_SMOOTHING =
+  0.10;
 
 /*
-  Map rotation smoothing.
-
-  Lower = smoother
-  Higher = faster response
+  Number of GPS samples to keep.
 */
 
-const ROTATION_SMOOTHING = 0.08;
+const HISTORY_LENGTH =
+  200;
 
-/*
-  Maximum GPS history entries.
-*/
+// ==================================================
+// GPS HISTORY
+// ==================================================
 
-const HISTORY_LENGTH = 200;
+const gpsHistory = [];
+
+// ==================================================
+// DISPLAY VARIABLES
+// ==================================================
+
+let displayedLat =
+  null;
+
+let displayedLon =
+  null;
+
+let firstFix =
+  true;
+
+let accuracyCircle =
+  null;
 
 // ==================================================
 // MAP
 // ==================================================
 
-const map = L.map(
-  "map",
-  {
-    zoomControl: false,
-    attributionControl: true
-  }
-);
+/*
+  The important part:
+
+  rotate: true
+
+  This enables real Leaflet map rotation.
+*/
+
+const map =
+
+  L.map(
+
+    "map",
+
+    {
+
+      zoomControl:
+        false,
+
+      rotate:
+        true,
+
+      /*
+        We don't need manual rotation controls.
+      */
+
+      touchRotate:
+        false,
+
+      dragRotate:
+        false,
+
+      shiftKeyRotate:
+        false
+
+    }
+
+  );
+
+// ==================================================
+// MAP TILES
+// ==================================================
 
 /*
-  Minimal monochrome map.
+  Standard OpenStreetMap tiles.
 
-  Carto's light basemap gives us a cleaner,
-  automotive-style appearance than the
-  standard colorful OpenStreetMap tiles.
+  No API key.
+
+  No account.
 */
 
 L.tileLayer(
+
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
 
- {
-  attribution:
-    "&copy; OpenStreetMap contributors",
+  {
 
-  maxZoom:
-    19
-}
+    attribution:
+      "&copy; OpenStreetMap contributors",
+
+    maxZoom:
+      19
+
+  }
+
 ).addTo(map);
-
-// ==================================================
-// GPS VARIABLES
-// ==================================================
-
-const gpsHistory = [];
-
-let displayedLat = null;
-
-let displayedLon = null;
-
-let displayedHeading = 0;
-
-let targetRotation = 0;
-
-let firstFix = true;
-
-let accuracyCircle = null;
-
-// ==================================================
-// ANGLE FUNCTIONS
-// ==================================================
-
-/*
-  Convert any angle into:
-
-  0° - 360°
-*/
-
-function normalizeAngle(angle) {
-
-  angle =
-    angle % 360;
-
-  if (angle < 0) {
-
-    angle += 360;
-
-  }
-
-  return angle;
-
-}
-
-/*
-  Find the shortest rotation between
-  two angles.
-
-  This prevents:
-
-  359° → 1°
-
-  from rotating almost a full circle.
-*/
-
-function shortestAngleDifference(
-  from,
-  to
-) {
-
-  let difference =
-
-    normalizeAngle(to) -
-    normalizeAngle(from);
-
-  if (difference > 180) {
-
-    difference -= 360;
-
-  }
-
-  if (difference < -180) {
-
-    difference += 360;
-
-  }
-
-  return difference;
-
-}
 
 // ==================================================
 // GPS
@@ -341,9 +333,9 @@ console.log(
 
 navigator.geolocation.watchPosition(
 
-  // ------------------------------------------------
-  // SUCCESS
-  // ------------------------------------------------
+  // =================================================
+  // GPS SUCCESS
+  // =================================================
 
   function(position) {
 
@@ -367,9 +359,9 @@ navigator.geolocation.watchPosition(
     const timestamp =
       Date.now();
 
-    // ----------------------------------------------
-    // STORE GPS READING
-    // ----------------------------------------------
+    // -----------------------------------------------
+    // SAVE GPS SAMPLE
+    // -----------------------------------------------
 
     gpsHistory.push({
 
@@ -390,9 +382,9 @@ navigator.geolocation.watchPosition(
 
     });
 
-    // ----------------------------------------------
-    // REMOVE OLD READINGS
-    // ----------------------------------------------
+    // -----------------------------------------------
+    // LIMIT HISTORY
+    // -----------------------------------------------
 
     while (
 
@@ -405,9 +397,9 @@ navigator.geolocation.watchPosition(
 
     }
 
-    // ----------------------------------------------
-    // FIRST FIX
-    // ----------------------------------------------
+    // =================================================
+    // FIRST GPS FIX
+    // =================================================
 
     if (firstFix) {
 
@@ -418,7 +410,7 @@ navigator.geolocation.watchPosition(
         longitude;
 
       /*
-        Put the map around the user's position.
+        Center map on the user.
       */
 
       map.setView(
@@ -437,9 +429,9 @@ navigator.geolocation.watchPosition(
 
       );
 
-      /*
-        Accuracy circle.
-      */
+      // ---------------------------------------------
+      // ACCURACY CIRCLE
+      // ---------------------------------------------
 
       accuracyCircle =
 
@@ -476,12 +468,12 @@ navigator.geolocation.watchPosition(
 
     }
 
-    // ----------------------------------------------
+    // =================================================
     // STATUS
-    // ----------------------------------------------
+    // =================================================
 
     let headingText =
-      "Unknown";
+      "Waiting for movement";
 
     if (
 
@@ -513,9 +505,9 @@ navigator.geolocation.watchPosition(
 
   },
 
-  // ------------------------------------------------
-  // ERROR
-  // ------------------------------------------------
+  // =================================================
+  // GPS ERROR
+  // =================================================
 
   function(error) {
 
@@ -538,17 +530,30 @@ navigator.geolocation.watchPosition(
 
   },
 
-  // ------------------------------------------------
+  // =================================================
   // GPS OPTIONS
-  // ------------------------------------------------
+  // =================================================
 
   {
+
+    /*
+      Ask for the highest available
+      location accuracy.
+    */
 
     enableHighAccuracy:
       true,
 
+    /*
+      Don't use old cached locations.
+    */
+
     maximumAge:
       0,
+
+    /*
+      Give the phone up to 20 seconds.
+    */
 
     timeout:
       20000
@@ -558,7 +563,7 @@ navigator.geolocation.watchPosition(
 );
 
 // ==================================================
-// GET DELAYED POSITION
+// GET DELAYED GPS POSITION
 // ==================================================
 
 function getDelayedPosition() {
@@ -571,6 +576,11 @@ function getDelayedPosition() {
 
   }
 
+  /*
+    We want the GPS position from
+    approximately 2 seconds ago.
+  */
+
   const targetTime =
 
     Date.now() -
@@ -582,22 +592,28 @@ function getDelayedPosition() {
   let next =
     null;
 
-  // ----------------------------------------------
-  // FIND GPS SAMPLES
-  // ----------------------------------------------
+  // -----------------------------------------------
+  // FIND SURROUNDING SAMPLES
+  // -----------------------------------------------
 
   for (
+
     let i = 0;
+
     i < gpsHistory.length;
+
     i++
+
   ) {
 
     const sample =
       gpsHistory[i];
 
     if (
+
       sample.timestamp <=
       targetTime
+
     ) {
 
       previous =
@@ -606,8 +622,10 @@ function getDelayedPosition() {
     }
 
     if (
+
       sample.timestamp >
       targetTime
+
     ) {
 
       next =
@@ -619,9 +637,9 @@ function getDelayedPosition() {
 
   }
 
-  // ----------------------------------------------
+  // -----------------------------------------------
   // NOT ENOUGH HISTORY
-  // ----------------------------------------------
+  // -----------------------------------------------
 
   if (!previous) {
 
@@ -635,9 +653,9 @@ function getDelayedPosition() {
 
   }
 
-  // ----------------------------------------------
-  // INTERPOLATION
-  // ----------------------------------------------
+  // -----------------------------------------------
+  // INTERPOLATE
+  // -----------------------------------------------
 
   const timeRange =
 
@@ -652,25 +670,29 @@ function getDelayedPosition() {
   const amount =
 
     Math.max(
+
       0,
+
       Math.min(
+
         1,
+
         timePassed /
         timeRange
-      )
-    );
 
-  // ----------------------------------------------
-  // POSITION
-  // ----------------------------------------------
+      )
+
+    );
 
   const latitude =
 
     previous.latitude +
 
     (
+
       next.latitude -
       previous.latitude
+
     ) *
 
     amount;
@@ -680,50 +702,13 @@ function getDelayedPosition() {
     previous.longitude +
 
     (
+
       next.longitude -
       previous.longitude
+
     ) *
 
     amount;
-
-  // ----------------------------------------------
-  // HEADING
-  // ----------------------------------------------
-
-  let heading =
-    previous.heading;
-
-  if (
-
-    previous.heading !== null &&
-    previous.heading !== undefined &&
-
-    next.heading !== null &&
-    next.heading !== undefined
-
-  ) {
-
-    const difference =
-
-      shortestAngleDifference(
-
-        previous.heading,
-        next.heading
-
-      );
-
-    heading =
-
-      normalizeAngle(
-
-        previous.heading +
-
-        difference *
-        amount
-
-      );
-
-  }
 
   return {
 
@@ -737,14 +722,14 @@ function getDelayedPosition() {
       previous.accuracy,
 
     heading:
-      heading
+      previous.heading
 
   };
 
 }
 
 // ==================================================
-// ANIMATION
+// SMOOTH POSITION + HEADING
 // ==================================================
 
 function animate() {
@@ -753,19 +738,23 @@ function animate() {
     getDelayedPosition();
 
   if (
+
     position &&
     !firstFix
+
   ) {
 
-    // ----------------------------------------------
+    // -----------------------------------------------
     // SMOOTH POSITION
-    // ----------------------------------------------
+    // -----------------------------------------------
 
     displayedLat +=
 
       (
+
         position.latitude -
         displayedLat
+
       ) *
 
       POSITION_SMOOTHING;
@@ -773,15 +762,17 @@ function animate() {
     displayedLon +=
 
       (
+
         position.longitude -
         displayedLon
+
       ) *
 
       POSITION_SMOOTHING;
 
-    // ----------------------------------------------
-    // MOVE MAP
-    // ----------------------------------------------
+    // -----------------------------------------------
+    // CENTER MAP
+    // -----------------------------------------------
 
     map.setView(
 
@@ -793,15 +784,17 @@ function animate() {
       map.getZoom(),
 
       {
+
         animate:
           false
+
       }
 
     );
 
-    // ----------------------------------------------
+    // -----------------------------------------------
     // ACCURACY CIRCLE
-    // ----------------------------------------------
+    // -----------------------------------------------
 
     if (accuracyCircle) {
 
@@ -816,75 +809,58 @@ function animate() {
 
     }
 
-    // ----------------------------------------------
-    // HEADING
-    // ----------------------------------------------
+    // -----------------------------------------------
+    // HEADING-UP
+    // -----------------------------------------------
 
     if (
 
       position.heading !== null &&
-      position.heading !== undefined
+      position.heading !== undefined &&
+      !isNaN(position.heading)
 
     ) {
 
       /*
-        We want the user's direction
-        to point toward the TOP of the screen.
+        This is the important part.
 
-        GPS heading:
+        setHeading(heading)
 
-        0°   = North
-        90°  = East
-        180° = South
-        270° = West
+        tells the rotation plugin:
 
-        Therefore the map must rotate
-        in the opposite direction.
+        "This is the direction the vehicle
+        is traveling."
+
+        The plugin rotates the MAP so that
+        this direction points toward the top
+        of the screen.
+
+        The blue indicator does NOT rotate.
       */
 
-      targetRotation =
+      map.setHeading(
 
-        -position.heading;
+        position.heading,
 
-      const difference =
+        {
 
-        shortestAngleDifference(
+          ease:
+            0.08,
 
-          displayedHeading,
+          deadzone:
+            0.5
 
-          targetRotation
+        }
 
-        );
-
-      displayedHeading +=
-
-        difference *
-        ROTATION_SMOOTHING;
-
-      /*
-        Apply rotation to the map.
-
-        IMPORTANT:
-
-        The blue GPS indicator is NOT
-        rotated with the map.
-      */
-
-      document
-        .getElementById("map-rotation")
-        .style.transform =
-
-          "rotate(" +
-          displayedHeading +
-          "deg)";
+      );
 
     }
 
   }
 
-  // ----------------------------------------------
-  // CONTINUE ANIMATION
-  // ----------------------------------------------
+  // -----------------------------------------------
+  // NEXT FRAME
+  // -----------------------------------------------
 
   requestAnimationFrame(
     animate
@@ -899,18 +875,22 @@ function animate() {
 animate();
 
 // ==================================================
-// CENTER BUTTON
+// RECENTER BUTTON
 // ==================================================
 
 document
   .getElementById("centerButton")
   .addEventListener(
+
     "click",
+
     function() {
 
       if (
+
         displayedLat !== null &&
         displayedLon !== null
+
       ) {
 
         map.setView(
@@ -923,8 +903,10 @@ document
           17,
 
           {
+
             animate:
               true
+
           }
 
         );
@@ -932,6 +914,7 @@ document
       }
 
     }
+
   );
 
 </script> </body> </html>
